@@ -10,6 +10,7 @@ from dofler import config
 from dofler.models import *
 from dofler.db import SettingSession
 from dofler.md5 import md5hash
+from random import randint
 
 class DoflerClient(object):
     '''
@@ -88,12 +89,12 @@ class DoflerClient(object):
 
         :return: None
         '''
-        # If the anonymization bit is set, then we need to hide the password. 
-        # We will still display the first 3 characters, however will asterisk
-        # the rest of the password past that point.
+	# If the anonymization bit is set, then we need to hide the password.
+	# We will still display the first 3 characters, however will replace
+	# the rest of the password with a random number of asterisks.
         if self.anonymize:
             if len(password) >= 3:
-                password = '%s%s' % (password[:3], '*' * (len(password) - 3))
+                password = '%s%s' % (password[:3], '*' * (randint(2,8)))
         if self.host in ['localhost', '127.0.0.1']:
             s = self.Session()
             s.add(Account(username, password, info, proto, parser))
