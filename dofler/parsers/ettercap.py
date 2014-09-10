@@ -7,8 +7,8 @@ class Parser(BaseParser):
     (basically looking for account info) and then passes it on to the API.
     '''
     name = 'ettercap'
-    ruser = re.compile(r'USER: (.*?)  ')    # USER Regex: Pulls out USER field.
-    rpass = re.compile(r'PASS: (.*?)  ')    # PASS Regex: Pulls out PASS field.
+    ruser = re.compile(r'USER: (\S*)')    # USER Regex: Pulls out USER field.
+    rpass = re.compile(r'PASS: (\S*)')    # PASS Regex: Pulls out PASS field.
     rinfo = re.compile(r'INFO: (.*?)$')     # INFO Regex: Pulls out INFO field.
     rproto = re.compile(r'^(\w*) : ')       # PROTO Regex: Pulls the protocal.
 
@@ -22,7 +22,10 @@ class Parser(BaseParser):
             if len(usernames) > 0 and len(passwords) > 0:
                 username = usernames[0]
                 password = passwords[0]
-                info = infos[0]
+                try:
+                    info = infos[0]
+                except:
+                    info = ''
                 proto = protos[0]
                 log.debug('ETTERCAP: sending Account <%s>' % username)
                 self.api.account(username, password, info, proto, 'ettercap')
