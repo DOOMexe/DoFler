@@ -1,6 +1,8 @@
 from base import BaseParser, log
 import re
-import os
+import os, glob
+from PIL import Image
+
 
 class Parser(BaseParser):
     '''
@@ -11,6 +13,23 @@ class Parser(BaseParser):
     '''
     name = 'driftnet'
 
+    def checkporn(self, im):
+        '''
+        Detect if a grabbed picture is porn by counting the % of "skin" color in the image
+        Original idea: http://warriorhut.org/
+        '''
+	
+        # Define my is_array function
+        is_array = lambda var: isinstance(var, (list, tuple))
+
+	# For performance reasons, don't scan small pictures < 100 x 100 pixels
+	if im.size[0] < 100 or im.size[1] < 100:
+            return 0
+	
+        im = im.crop((int(im.size[0]*0.2), int(im.size[1]*0.2), im.size[0]-int(im.size[0]*0.2), im.size[1]-int(im.size[1]*0.2)))
+        skin = sum([count for count, rgb in im.getcolors(im.size[0]*im.size[1]) if is_array(rgb) and rgb[0]>60 and rgb[1]<(rgb[0]*0.85) and rgb[2]<(rgb[0]*0.7) and rgb[1]>(rgb[0]*0.4) and rgb[2]>(rgb[0]*0.2)])
+        return float(skin)/float(im.size[0]*im.size[1])
+
     def parse(self, line):
         '''
         Driftnet output line parser. 
@@ -19,13 +38,22 @@ class Parser(BaseParser):
         # filename of the image that driftnet carved out.  All we need to do is
         # open it up, send the data to the API, then remove the file.
         filename = line.strip('\r\n ')
-        log.debug('DRIFTNET: sending image %s' % filename)
-        self.api.image(filename)
+
+        # Check if the picture is "porn"
+        try:
+            im = Image.open(filename)
+            skinratio = self.checkporn(Image.open(filename)) * 100
+            if skinratio > 30:
+                log.debug('DRIFTNET: skipping image %s (detected as porn - skin: %s%%)' % (filename, skinratio))
+            else:
+                log.debug('DRIFTNET: sending image %s (skin: %s%%)' % (filename, skinratio))
+                self.api.image(filename)
+        except:
+            log.debug('DRIFTNET: skipping image %s (not readable)' % filename)
         try:
             os.remove(filename)
         except:
-            log.warn('DRIFTNET: could not remove %s' % filename)
-
+            log.warn('DRIFTNET: cannot remove %s' % filename)
 
     def cleanup(self):
         '''
