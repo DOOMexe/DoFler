@@ -97,10 +97,17 @@ class DoflerClient(object):
                 password = '%s%s' % (password[:3], '*' * (randint(2,8)))
         if self.host in ['localhost', '127.0.0.1']:
             s = self.Session()
-            s.add(Account(username, password, info, proto, parser))
-            s.commit()
-            log.debug('DATABASE: Added Account: %s:%s:%s:%s:%s' % (username,
-                password, info, proto, parser))
+            # Check if the account already exists
+            # Tip: don't check for the password (if anonymized)
+            try:
+                account = s.query(Account).filter_by(username=username,
+                                                     proto=proto,
+                                                     info=info).one()
+            except:
+                s.add(Account(username, password, info, proto, parser))
+                s.commit()
+                log.debug('DATABASE: Added Account: %s:%s:%s:%s:%s' % (username,
+                    password, info, proto, parser))
         else:
             self.call('/post/account', {
                 'username': username,

@@ -48,10 +48,12 @@ def new_account(db):
         if isinstance(info, tuple): info = info[0]
         if isinstance(proto, tuple): proto = proto[0]
         if isinstance(parser, tuple): parser = parser[0]
+
+	# Tip: Do not check the password (if anonymized)
         try:
             account = db.query(Account).filter_by(username=username,
-                                                 proto=proto,
                                                  password=password,
+                                                 proto=proto,
                                                  info=info).one()
         except:
             account = Account(username, password, info, proto, parser)
