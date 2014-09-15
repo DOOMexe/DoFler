@@ -121,13 +121,15 @@ def get_pvs_data(limit, db):
     rethosts = []
     max_vulns = 0
     for item in shosts[:limit]:
-        d = {'host': item['hostname']}
-        sevs = {0: 'info', 1: 'low', 2: 'medium', 3: 'high', 4: 'critical'}
-        for severity in item['severitycount']['item']:
-            d[sevs[severity['severitylevel']]] = severity['count']
-        if item['severity'] > max_vulns:
-            max_vulns = item['severity']
-        rethosts.append(d)
+	# Cleanup: Remove entry with '0.0.0.0'
+        if item['hostname'] != '0.0.0.0':
+            d = {'host': item['hostname']}
+            sevs = {0: 'info', 1: 'low', 2: 'medium', 3: 'high', 4: 'critical'}
+            for severity in item['severitycount']['item']:
+                d[sevs[severity['severitylevel']]] = severity['count']
+            if item['severity'] > max_vulns:
+                max_vulns = item['severity']
+            rethosts.append(d)
     requests.post('https://%s:8835/logout' % setting('pvs_host').value, data={
         'seq': 1802, 'json': 1, 'token': pvs_key}, verify=False)
     return jsonify({'vuln_max': max_vulns, 'hosts': rethosts})
